@@ -22,7 +22,7 @@
 *.iml
 *.log
 
-*.html
+android/build/reports/problems/problems-report.html
 
 android/.kotlin/
 android/key.properties
