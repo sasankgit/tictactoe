@@ -9,6 +9,8 @@
 
 # Android local configuration and build output
 /android/local.properties
+/android/key.properties
+/android/app/*.jks
 /android/.gradle/
 /android/app/debug
 /android/app/profile
@@ -23,3 +25,4 @@
 *.html
 
 android/.kotlin/
+android/key.properties
