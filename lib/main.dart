@@ -117,6 +117,7 @@ class _SplashScreenState extends State<_SplashScreen> {
 }
 
 enum GameMode { humanAi, humanHuman }
+enum AiDifficulty { easy, medium, hard }
 
 class GamePage extends StatefulWidget {
   const GamePage({super.key});
@@ -128,6 +129,7 @@ class GamePage extends StatefulWidget {
 class _GamePageState extends State<GamePage> {
   final List<String?> _board = List.filled(9, null);
   GameMode _mode = GameMode.humanAi;
+  AiDifficulty _difficulty = AiDifficulty.hard;
   String _turn = 'X';
   String? _winner;
   bool _draw = false;
@@ -305,7 +307,11 @@ class _GamePageState extends State<GamePage> {
       if (_board[i] == null) open.add(i);
     }
     if (open.isEmpty) return -1;
-    // Prefer a winning move, then a block, then the center/corners.
+    if (_difficulty == AiDifficulty.easy) {
+      return open[math.Random().nextInt(open.length)];
+    }
+
+    // Medium takes immediate wins and blocks, then chooses randomly.
     for (final mark in ['O', 'X']) {
       for (final index in open) {
         _board[index] = mark;
@@ -314,6 +320,11 @@ class _GamePageState extends State<GamePage> {
         if (wins) return index;
       }
     }
+    if (_difficulty == AiDifficulty.medium) {
+      return open[math.Random().nextInt(open.length)];
+    }
+
+    // Hard prefers a winning move, then a block, then the center/corners.
     if (open.contains(4)) return 4;
     final corners = open.where((i) => const [0, 2, 6, 8].contains(i)).toList();
     if (corners.isNotEmpty)
@@ -385,6 +396,49 @@ class _GamePageState extends State<GamePage> {
             children: [
               Expanded(
                 child: LayoutBuilder(builder: (context, constraints) {
+                  if (constraints.maxWidth > constraints.maxHeight) {
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 5,
+                            child: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _topBar(),
+                                  const SizedBox(height: 10),
+                                  _title(),
+                                  const SizedBox(height: 14),
+                                  _modePicker(),
+                                  if (_mode == GameMode.humanAi) ...[
+                                    const SizedBox(height: 8),
+                                    _difficultyPicker(),
+                                  ],
+                                  const SizedBox(height: 12),
+                                  _scoreCard(),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 18),
+                          Expanded(
+                            flex: 6,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: Center(child: _boardWidget()),
+                                ),
+                                const SizedBox(height: 8),
+                                _statusCard(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                   return SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(22, 14, 22, 20),
                     child: ConstrainedBox(
@@ -397,6 +451,10 @@ class _GamePageState extends State<GamePage> {
                           _title(),
                           const SizedBox(height: 24),
                           _modePicker(),
+                          if (_mode == GameMode.humanAi) ...[
+                            const SizedBox(height: 12),
+                            _difficultyPicker(),
+                          ],
                           const SizedBox(height: 20),
                           _scoreCard(),
                           const SizedBox(height: 22),
@@ -473,6 +531,64 @@ class _GamePageState extends State<GamePage> {
           _modeButton(
               GameMode.humanHuman, Icons.people_alt_rounded, '2 PLAYERS'),
         ]),
+      );
+
+  Widget _difficultyPicker() => Container(
+        padding: const EdgeInsets.fromLTRB(14, 11, 14, 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(.72),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.tune_rounded, size: 16, color: _ink.withOpacity(.6)),
+                const SizedBox(width: 7),
+                Text('COMPUTER DIFFICULTY',
+                    style: TextStyle(
+                        color: _ink.withOpacity(.65),
+                        fontSize: 10,
+                        letterSpacing: .9,
+                        fontWeight: FontWeight.w800)),
+              ],
+            ),
+            const SizedBox(height: 9),
+            Row(
+              children: AiDifficulty.values.map((difficulty) {
+                final selected = _difficulty == difficulty;
+                final label = switch (difficulty) {
+                  AiDifficulty.easy => 'Easy',
+                  AiDifficulty.medium => 'Medium',
+                  AiDifficulty.hard => 'Hard',
+                };
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _difficulty = difficulty),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        decoration: BoxDecoration(
+                          color: selected ? _purple : const Color(0xFFF3F1FF),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(label,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: selected ? Colors.white : _ink.withOpacity(.68),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800)),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
       );
 
   Widget _modeButton(GameMode mode, IconData icon, String label) {
